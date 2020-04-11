@@ -16,19 +16,10 @@ import java.util.Map;
 public class HistoryContent {
 
 
-
     public static final List<HistoryItem> ITEMS = new ArrayList<HistoryItem>();
 
     public static void addItem(HistoryItem item) {
         ITEMS.add(item);
-    }
-
-    static {
-        DateTime now = DateTime.now();
-        addItem(new HistoryItem(2.0, 1.829, "Length", "Yards", "Meters", now.minusDays(1)));
-        addItem(new HistoryItem(1.0, 3.785, "Volume", "Gallons", "Liters", now.minusDays(1)));
-        addItem(new HistoryItem(2.0, 1.829, "Length", "Yards", "Meters", now.plusDays(1)));
-        addItem(new HistoryItem(1.0, 3.785, "Volume", "Gallons", "Liters", now.plusDays(1)));
     }
 
     public static class HistoryItem {
@@ -37,11 +28,22 @@ public class HistoryContent {
         public final String mode;
         public final String fromUnits;
         public final String toUnits;
+        public final String timestamp;
+        public String _key;
 
-        public final DateTime timestamp;
+
+        public HistoryItem() {
+            fromVal = 2.0;
+            toVal = 1.829;
+            mode = "";
+            fromUnits = "";
+            toUnits = "";
+            timestamp = DateTime.now().toString();
+            _key = "";
+        }
 
         public HistoryItem(Double fromVal, Double toVal, String mode,
-                           String fromUnits, String toUnits, DateTime timestamp) {
+                           String fromUnits, String toUnits, String timestamp) {
             this.fromVal = fromVal;
             this.toVal = toVal;
             this.mode = mode;
