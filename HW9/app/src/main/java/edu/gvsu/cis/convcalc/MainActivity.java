@@ -49,15 +49,15 @@ public class MainActivity extends AppCompatActivity {
     private TextView fromUnits;
     private TextView title;
 
-    public static List<HistoryContent.HistoryItem> allHistory;
-
     DatabaseReference topRef;
+
+    public static List<HistoryContent.HistoryItem> allHistory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        allHistory = new ArrayList<HistoryContent.HistoryItem>();
         setContentView(R.layout.activity_main);
+        allHistory = new ArrayList<HistoryContent.HistoryItem>();
 
         calcButton = findViewById(R.id.calcButton);
         clearButton = findViewById(R.id.clearButton);
@@ -117,20 +117,6 @@ public class MainActivity extends AppCompatActivity {
 //
     }
 
-    @Override
-    public void onResume(){
-        super.onResume();
-        topRef = FirebaseDatabase.getInstance().getReference("history");
-        topRef.addChildEventListener (chEvListener);
-    }
-
-    @Override
-    public void onPause(){
-        super.onPause();
-        topRef.removeEventListener(chEvListener);
-    }
-
-
     private void doConversion() {
         EditText dest = null;
         String val = "";
@@ -144,9 +130,8 @@ public class MainActivity extends AppCompatActivity {
             val = toVal;
             dest = fromField;
         }
-
+        DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
         if (dest != null) {
-            DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
             switch(mode) {
                 case Length:
                     LengthUnits tUnits, fUnits;
@@ -203,6 +188,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    public void onResume(){
+        super.onResume();
+        topRef = FirebaseDatabase.getInstance().getReference("history");
+        topRef.addChildEventListener (chEvListener);
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        topRef.removeEventListener(chEvListener);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -281,5 +278,6 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
-
 }
+
+
