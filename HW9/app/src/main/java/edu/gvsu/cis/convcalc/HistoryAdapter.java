@@ -13,6 +13,7 @@ import com.truizlop.sectionedrecyclerview.SectionedRecyclerViewAdapter;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeParser;
 
 import edu.gvsu.cis.convcalc.HistoryFragment.OnListFragmentInteractionListener;
 import edu.gvsu.cis.convcalc.dummy.HistoryContent.HistoryItem;
@@ -38,14 +39,13 @@ public class HistoryAdapter extends
     private final List<String> sectionHeaders;
 
     public HistoryAdapter(List<HistoryItem> items, OnListFragmentInteractionListener listener) {
-        //mValues = items;
         this.dayValues = new HashMap<String,List<HistoryItem>>();
         this.sectionHeaders = new ArrayList<String>();
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd");
 
         for (HistoryItem hi : items) {
             DateTime t = DateTime.parse(hi.timestamp);
-            String key = "Entries for " + fmt.print(t);
+            String key = "Entries for " + fmt.print(t);;
             List<HistoryItem> list = this.dayValues.get(key);
             if (list == null) {
                 list = new ArrayList<HistoryItem>();

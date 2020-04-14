@@ -1,8 +1,12 @@
 package edu.gvsu.cis.convcalc;
 
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import android.content.IntentFilter;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -10,6 +14,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.firebase.database.ChildEventListener;
@@ -28,6 +33,7 @@ import java.util.List;
 import edu.gvsu.cis.convcalc.UnitsConverter.LengthUnits;
 import edu.gvsu.cis.convcalc.UnitsConverter.VolumeUnits;
 import edu.gvsu.cis.convcalc.dummy.HistoryContent;
+import edu.gvsu.cis.convcalc.weatherservice.WeatherService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -48,9 +54,13 @@ public class MainActivity extends AppCompatActivity {
     private TextView toUnits;
     private TextView fromUnits;
     private TextView title;
+    private TextView current;
+    private TextView temperature;
+
+    private ImageView weatherIcon;
+
 
     DatabaseReference topRef;
-
     public static List<HistoryContent.HistoryItem> allHistory;
 
     @Override
@@ -58,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         allHistory = new ArrayList<HistoryContent.HistoryItem>();
-
         calcButton = findViewById(R.id.calcButton);
         clearButton = findViewById(R.id.clearButton);
         modeButton = findViewById(R.id.modeButton);
@@ -71,7 +80,13 @@ public class MainActivity extends AppCompatActivity {
 
         title = findViewById(R.id.title);
 
+        current = findViewById(R.id.current);
+        temperature = findViewById(R.id.temperature);
+
+        weatherIcon = findViewById(R.id.weatherIcon);
+
         calcButton.setOnClickListener(v -> {
+            WeatherService.startGetWeather(this, "42.963686", "-85.888595", "p1");
             doConversion();
         });
 
@@ -117,6 +132,24 @@ public class MainActivity extends AppCompatActivity {
 //
     }
 
+    @Override
+    public void onResume(){
+        super.onResume();
+        allHistory.clear();
+        topRef = FirebaseDatabase.getInstance().getReference("history");
+        topRef.addChildEventListener (chEvListener);
+        IntentFilter weatherFilter = new IntentFilter(WeatherService.BROADCAST_WEATHER);
+        LocalBroadcastManager.getInstance(this).registerReceiver(weatherReceiver, weatherFilter);
+    }
+
+    @Override
+    public void onPause(){
+        super.onPause();
+        topRef.removeEventListener(chEvListener);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(weatherReceiver);
+    }
+
+
     private void doConversion() {
         EditText dest = null;
         String val = "";
@@ -130,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             val = toVal;
             dest = fromField;
         }
-        DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
+        HistoryContent.HistoryItem item;
         if (dest != null) {
             switch(mode) {
                 case Length:
@@ -146,10 +179,15 @@ public class MainActivity extends AppCompatActivity {
                     Double cVal = UnitsConverter.convert(dVal, fUnits, tUnits);
                     dest.setText(Double.toString(cVal));
                     // remember the calculation.
-                    HistoryContent.HistoryItem item = new HistoryContent.HistoryItem(dVal, cVal, mode.toString(),
+                    DateTimeFormatter fmt = ISODateTimeFormat.dateTime();
+                    item = new HistoryContent.HistoryItem(dVal, cVal, mode.toString(),
                             fUnits.toString(), tUnits.toString(), fmt.print(DateTime.now()));
                     HistoryContent.addItem(item);
                     topRef.push().setValue(item);
+
+//                    item = new HistoryContent.HistoryItem(dVal, cVal, mode.toString(),
+//                            toUnits.getText().toString(), fromUnits.getText().toString(), DateTime.now());
+//                    HistoryContent.addItem(item);
                     break;
                 case Volume:
                     VolumeUnits vtUnits, vfUnits;
@@ -164,10 +202,14 @@ public class MainActivity extends AppCompatActivity {
                     Double vcVal = UnitsConverter.convert(vdVal, vfUnits, vtUnits);
                     dest.setText(Double.toString(vcVal));
                     // remember the calculation.
-                    HistoryContent.HistoryItem vItem = new HistoryContent.HistoryItem(vdVal, vcVal, mode.toString(),
-                            vfUnits.toString(), vtUnits.toString(), fmt.print(DateTime.now()));
-                    HistoryContent.addItem(vItem);
-                    topRef.push().setValue(vItem);
+                    DateTimeFormatter fmt2 = ISODateTimeFormat.dateTime();
+                    item = new HistoryContent.HistoryItem(vdVal, vcVal, mode.toString(),
+                            vfUnits.toString(), vtUnits.toString(), fmt2.print(DateTime.now()));
+                    HistoryContent.addItem(item);
+                    topRef.push().setValue(item);
+//                    item = new HistoryContent.HistoryItem(vdVal, vcVal, mode.toString(),
+//                            toUnits.getText().toString(), fromUnits.getText().toString(), DateTime.now());
+//                    HistoryContent.addItem(item);
                     break;
             }
 
@@ -188,18 +230,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    public void onResume(){
-        super.onResume();
-        topRef = FirebaseDatabase.getInstance().getReference("history");
-        topRef.addChildEventListener (chEvListener);
-    }
-
-    @Override
-    public void onPause(){
-        super.onPause();
-        topRef.removeEventListener(chEvListener);
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -278,6 +308,24 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+    private BroadcastReceiver weatherReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Bundle bundle = intent.getExtras();
+            double temp = bundle.getDouble("TEMPERATURE");
+            String summary = bundle.getString("SUMMARY");
+            String icon = bundle.getString("ICON").replaceAll("-", "_");
+            String key = bundle.getString("KEY");
+            int resID = getResources().getIdentifier("img" + icon, "drawable", getPackageName());
+
+            if (key.equals("p1")) {
+                current.setText(summary);
+                temperature.setText(Double.toString(temp));
+                weatherIcon.setImageResource(resID);
+            }
+        }
+    };
+
+
 }
-
-

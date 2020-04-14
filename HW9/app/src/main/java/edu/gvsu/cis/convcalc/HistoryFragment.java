@@ -31,7 +31,6 @@ public class HistoryFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-
     List<HistoryItem> allHistory;
 
     /**
@@ -75,6 +74,7 @@ public class HistoryFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
+            //recyclerView.setAdapter(new HistoryAdapter(HistoryContent.ITEMS, mListener));
             recyclerView.setAdapter(new HistoryAdapter(allHistory, mListener));
             DividerItemDecoration did = new DividerItemDecoration(recyclerView.getContext(),
                     DividerItemDecoration.VERTICAL);
